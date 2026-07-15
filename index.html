@@ -2077,6 +2077,24 @@ function parseCSV(t){const R=[];let r=[],c="",q=0;
       o[k]=v===""?null:(isNaN(+v)?v:+v)});return o});
 }
 async function load(){
+  // Leer los extras reales del Sheet (todos, no solo los de mi sesión)
+  if(CFG.ENDPOINT){
+    await unlockToken();
+    try{
+      const u=CFG.ENDPOINT+"?accion=bitacora&token="+encodeURIComponent(TOKEN_RT);
+      const r=await fetch(u);
+      const j=await r.json();
+      if(j.ok && Array.isArray(j.filas)){
+        SEED.bitacora = j.filas
+          .filter(f => f.id && String(f.id).startsWith("b"))  // solo extras reales, no las notas
+          .map(f=>({
+            id:f.id, Persona:f.Persona, Fecha:String(f.Fecha||"").slice(0,10),
+            Titulo:f.Titulo, Tipo:f.Tipo, Area:f.Area, Esfuerzo:f.Esfuerzo,
+            Impacto:f.Impacto, Link:f.Link, Estado:f.Estado
+          }));
+      }
+    }catch(err){ console.warn("No se pudo leer la bitácora del Sheet:",err); }
+  }
   const live=Object.values(CSV).some(Boolean);
   if(!live){D=SEED;$("#stamp").innerHTML="Datos semilla · pega las URLs CSV en <b>CONFIG</b> para conectar el Sheet";return}
   D={};for(const k of Object.keys(SEED)){
